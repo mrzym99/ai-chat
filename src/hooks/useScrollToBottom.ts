@@ -15,15 +15,12 @@ export function useScrollToBottom(deps: unknown[] = []) {
     skipNextScroll.current = false;
   }, []);
 
+  // 当依赖项变化时，如果用户在底部则平滑滚动
   useLayoutEffect(() => {
     if (isAtBottom) {
       scrollToBottom('smooth');
     }
   }, [...deps, isAtBottom, scrollToBottom]);
-
-  useEffect(() => {
-    scrollToBottom('instant');
-  }, [scrollToBottom]);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;

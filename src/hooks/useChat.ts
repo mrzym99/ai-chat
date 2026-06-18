@@ -1,6 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
-import { type Message } from '../types';
 import { callChatAPI } from '../api';
+import type { Message } from '../types';
+import { MAX_CONTEXT_MESSAGES } from '../constants';
+
+const getContextMessages = (allMessages: Message[]) => {
+  return allMessages.slice(-MAX_CONTEXT_MESSAGES)
+}
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,7 +39,7 @@ export function useChat() {
     abortControllerRef.current = abortController;
 
     try {
-      const stream = callChatAPI([...messages, userMessage], abortController);
+      const stream = callChatAPI([...getContextMessages(messages), userMessage], abortController);
       let fullContent = '';
 
       for await (const chunk of stream) {

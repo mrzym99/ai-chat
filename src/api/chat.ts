@@ -1,31 +1,7 @@
-export interface ApiMessage {
-  content?: string
-  role?: string
-  [property: string]: any
-}
+import type { ApiRequest, ApiMessage, ApiResponse } from "../types"
 
-export interface ApiRequest {
-  model: string
-  messages: ApiMessage[]
-  stream?: boolean
-  temperature?: number
-  max_tokens?: number
-  [property: string]: any
-}
 
-export interface ApiResponseChoice {
-  delta?: {
-    content?: string
-  }
-  finish_reason?: string
-}
-
-export interface ApiResponse {
-  choices?: ApiResponseChoice[]
-  [property: string]: any
-}
-
-const API_URL = 'https://api.chatanywhere.tech/v1/chat/completions'
+const API_URL = import.meta.env.VITE_API_URL
 const API_KEY = import.meta.env.VITE_API_KEY
 
 export async function* callChatAPI(

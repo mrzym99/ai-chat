@@ -22,7 +22,6 @@
 - 2026-06-16: 添加停止流式输出功能
 - 2026-06-16: 创建 env.d.ts 解决 import.meta.env 类型报错
 - 2026-06-16: 简化 tsconfig 类型检查，允许 any 类型
-- 2026-06-16: 使用 @radix-ui/react-slot 优化 Button 组件
 - 2026-06-16: 安装并使用 @radix-ui/themes 替换组件库
 - 2026-06-16: 安装 @radix-ui/react-icons 并替换所有 SVG 图标
 - 2026-06-16: 修复布局滚动条问题，设置聊天部分最大宽度为 880px

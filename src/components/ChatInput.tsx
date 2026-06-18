@@ -123,7 +123,7 @@ export function ChatInput({
           <div className="absolute right-2 bottom-2 flex items-end">
             {loading && onStop ? (
               <Button
-                color="red"
+                color="tomato"
                 size="3"
                 className="px-4 h-10 rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
                 onClick={handleStop}
