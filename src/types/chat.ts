@@ -1,8 +1,9 @@
 export interface Message {
   id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: Date
+  compressed?: boolean  // 标记是否为压缩摘要
 }
 
 export interface ApiMessage {

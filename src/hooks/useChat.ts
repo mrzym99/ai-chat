@@ -1,14 +1,16 @@
 import { useState, useRef, useCallback } from 'react';
 import { callChatAPI } from '../api';
 import type { Message } from '../types';
+import { prepareContextMessages } from '../utils/messageCompression';
 import { MAX_CONTEXT_MESSAGES } from '../constants';
 
-const getContextMessages = (allMessages: Message[]) => {
-  return allMessages.slice(-MAX_CONTEXT_MESSAGES)
+function getMaxContextMessages(messages: Message[]) {
+  return messages.slice(-MAX_CONTEXT_MESSAGES);
 }
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [summaries, setSummaries] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -39,7 +41,20 @@ export function useChat() {
     abortControllerRef.current = abortController;
 
     try {
-      const stream = callChatAPI([...getContextMessages(messages), userMessage], abortController);
+      const allMessages = [...messages, userMessage]
+      const { compressed, summaryMessage } = await prepareContextMessages(allMessages);
+      const sendMessages = []
+      if (compressed) {
+        setSummaries((prev) => [...prev, summaryMessage]);
+        setMessages((prev) => prev.map(msg => ({
+          ...msg,
+          compressed: true
+        })));
+        sendMessages.push(...summaries, summaryMessage)
+      } else {
+        sendMessages.push(...summaries, ...allMessages.filter((msg) => !msg.compressed && msg.role !== 'system'))
+      }
+      const stream = callChatAPI(getMaxContextMessages(sendMessages), abortController);
       let fullContent = '';
 
       for await (const chunk of stream) {
@@ -52,6 +67,7 @@ export function useChat() {
       }
     } catch (e) {
       if (e instanceof Error && e.name !== 'AbortError') {
+        console.error(e);
         setError('发送消息失败，请重试');
       }
     } finally {
