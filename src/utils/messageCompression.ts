@@ -6,7 +6,7 @@ import type { Message } from '../types'
  * 将消息列表转换为文本格式（用于压缩）
  */
 function messagesToText(messages: Message[]): string {
-  return messages.map(msg =>
+  return messages.filter(Boolean).map(msg =>
     `${msg.role === 'user' ? '用户' : msg.role === 'assistant' ? '助手' : '系统'}: ${msg.content}`
   ).join('\n')
 }
@@ -40,7 +40,8 @@ ${messagesToText(messagesToCompress)}
     let summary = ''
     const stream = callChatAPI(
       [
-        { role: 'system', content: '你是一个专业的对话总结助手，擅长提取关键信息。' },
+        { role: 'system', content: '你是一个专业的对话总结助手，擅长提取关键信息。语言和用户输入的保持一致' },
+        { role: 'system', content: '返回的内容使用 【对话摘要】+ 摘要 的格式 根据语言进行返回' },
         { role: 'user', content: compressionPrompt }
       ],
       abortController
@@ -66,31 +67,24 @@ ${messagesToText(messagesToCompress)}
  * - 超过阈值时，压缩这些未压缩的消息
  * - 不包含当前用户的问题
  */
-export async function prepareContextMessages(allMessages: Message[]): Promise<{
+export async function prepareContextMessages(messages: Message[], summary: Message): Promise<{
   compressed: boolean,
   summaryMessage: Message,
 }> {
   let compressed = false
-  const needCompressionMessages = allMessages.filter(msg => !msg.compressed) ?? []
+  const needCompressionMessages = messages.filter(msg => !msg.compressed) ?? []
 
   let finalSummary: string = ''
   // 如果已经全被压缩，返回空数组
   if (needCompressionMessages.length >= COMPRESSION_THRESHOLD) {
-    finalSummary += `【对话摘要】`
-    finalSummary = await compressMessages(needCompressionMessages)
+    finalSummary = await compressMessages([summary, ...needCompressionMessages])
     compressed = true 
-    allMessages = allMessages.map(msg => {
-      return {
-        ...msg,
-        compressed: true
-      }
-    })
   }
 
   const summaryMessage: Message = {
     id: `summary-${Date.now()}`,
     role: 'system',
-    content: finalSummary,
+    content: finalSummary ? finalSummary : '',
     timestamp: new Date(),
     compressed: true,
   }

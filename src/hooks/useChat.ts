@@ -2,15 +2,10 @@ import { useState, useRef, useCallback } from 'react';
 import { callChatAPI } from '../api';
 import type { Message } from '../types';
 import { prepareContextMessages } from '../utils/messageCompression';
-import { MAX_CONTEXT_MESSAGES } from '../constants';
-
-function getMaxContextMessages(messages: Message[]) {
-  return messages.slice(-MAX_CONTEXT_MESSAGES);
-}
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [summaries, setSummaries] = useState<Message[]>([]);
+  const [summary, setSummary] = useState<Message | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -41,20 +36,22 @@ export function useChat() {
     abortControllerRef.current = abortController;
 
     try {
-      const allMessages = [...messages, userMessage]
-      const { compressed, summaryMessage } = await prepareContextMessages(allMessages);
+      const { compressed, summaryMessage } = await prepareContextMessages(messages, summary);
       const sendMessages = []
       if (compressed) {
-        setSummaries((prev) => [...prev, summaryMessage]);
+        setSummary(summaryMessage);
         setMessages((prev) => prev.map(msg => ({
           ...msg,
           compressed: true
         })));
-        sendMessages.push(...summaries, summaryMessage)
+        sendMessages.push(summaryMessage, userMessage)
       } else {
-        sendMessages.push(...summaries, ...allMessages.filter((msg) => !msg.compressed && msg.role !== 'system'))
+        if(summary?.content) {
+          sendMessages.push(summary);
+        }
+        sendMessages.push(...messages.filter((msg) => !msg.compressed), userMessage)
       }
-      const stream = callChatAPI(getMaxContextMessages(sendMessages), abortController);
+      const stream = callChatAPI(sendMessages, abortController);
       let fullContent = '';
 
       for await (const chunk of stream) {
